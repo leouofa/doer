@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="docs/images/logo.jpg" alt="Doer Logo" width="600">
+</p>
+
 # Doer
 
 <p align="center">
