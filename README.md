@@ -15,6 +15,7 @@
   <a href="https://tailwindcss.com"><img src="https://img.shields.io/badge/Tailwind_CSS-v4-38B2AC?style=flat-square&logo=tailwind-css&logoColor=white" alt="Tailwind CSS v4"></a>
   <a href="https://www.postgresql.org"><img src="https://img.shields.io/badge/PostgreSQL-16%2B-336791?style=flat-square&logo=postgresql&logoColor=white" alt="PostgreSQL"></a>
   <img src="https://img.shields.io/badge/Architecture-Local--First-22c55e?style=flat-square" alt="Local-First Architecture">
+  <a href="https://github.com/leouofa/doer-mcp"><img src="https://img.shields.io/badge/MCP_Server-doer--mcp-6366f1?style=flat-square&logo=github&logoColor=white" alt="Doer MCP Server"></a>
 </p>
 
 ---
@@ -57,6 +58,11 @@
 - **Collapsible Sidebar**: Toggle with `⌘\` / `Ctrl+\` or via the top-bar button.
 - **Responsive Layout**: On mobile, views smoothly switch between list navigation and full-screen editor views.
 
+### 🤖 Model Context Protocol (MCP) & REST API
+- **Official MCP Server**: Connect AI coding assistants (Claude Desktop, Cursor, Gemini, Antigravity) directly to Doer via [`doer-mcp`](https://github.com/leouofa/doer-mcp).
+- **Interactive Checklists & Tasks**: AI agents can inspect, create, append task items, toggle checklist items (`- [ ]` / `- [x]`), organize projects, and reorder pinned lists.
+- **RESTful API & OpenAPI 3.1**: Full programmatic endpoints for todo lists, projects, attachments, search, platform stats, and markdown rendering.
+
 ---
 
 ## Architecture & Tech Stack
@@ -64,6 +70,8 @@
 ```mermaid
 graph TD
     Browser[Client: Hotwire Turbo 8 + Stimulus]
+    MCPAgent[AI Agents / MCP Clients]
+    MCPServer[doer-mcp Server]
     Tailwind[Tailwind CSS v4 + Redcarpet GFM]
     Rails[Ruby on Rails 8.1 API + Web Controllers]
     Postgres[(PostgreSQL 16+)]
@@ -71,6 +79,8 @@ graph TD
 
     Browser <-->|HTTP / Turbo Streams| Rails
     Browser --- Tailwind
+    MCPAgent <-->|MCP JSON-RPC| MCPServer
+    MCPServer <-->|REST API| Rails
     Rails <--> Postgres
     Rails <--> Storage
 ```
@@ -80,10 +90,18 @@ graph TD
 - **Database**: PostgreSQL 16+
 - **Attachments**: Active Storage (Local / Disk / S3 compatible)
 - **API**: Comprehensive RESTful JSON API with OpenAPI 3.1 specification at `/api/v1/openapi`
+- **MCP Server**: [`doer-mcp`](https://github.com/leouofa/doer-mcp) providing 19 tools, 5 resources, and sprint/task breakdown prompts
 
 ---
 
 ## Getting Started
+
+> [!TIP]
+> **Prefer running with Docker?** You can run the entire development stack (Rails on port 3010, Solid Queue background jobs, Tailwind watcher, and PostgreSQL with pgvector) in Docker Compose:
+> ```sh
+> docker compose up -d --build
+> ```
+> See [docs/DOCKER.md](docs/DOCKER.md) for full details, Tailscale access, volume persistence, and everyday commands.
 
 ### Prerequisites
 - Ruby 3.4+
@@ -117,23 +135,71 @@ graph TD
 
 ---
 
-## REST API Overview
+## REST API & MCP Integration
 
-Doer provides a complete JSON API under `/api/v1/`:
+Doer includes a complete versioned RESTful JSON API (`/api/v1`) with full OpenAPI 3.1.0 specifications, designed for easy programmatic integration and Model Context Protocol (MCP) server integration.
 
-- `GET /api/v1/todo_lists` - List todo lists (supports `?scope=standalone`, `?project_id=ID`, `?pinned=true`, `?q=query`)
-- `POST /api/v1/todo_lists` - Create a new todo list
-- `GET /api/v1/todo_lists/:id` - Get todo list details (`?render_markdown=true`)
-- `PATCH /api/v1/todo_lists/:id` - Update a todo list
-- `DELETE /api/v1/todo_lists/:id` - Delete a todo list
-- `PATCH /api/v1/todo_lists/:id/toggle_pin` - Toggle pinned state
-- `PATCH /api/v1/todo_lists/reorder_pinned` - Reorder pinned lists (`{ todo_list_ids: [...] }`)
-- `GET /api/v1/todo_lists/:id/attachments` - List attachments
-- `POST /api/v1/todo_lists/:id/attachments` - Upload attachments
-- `DELETE /api/v1/todo_lists/:id/attachments/:attachment_id` - Purge attachment
-- `GET /api/v1/projects` - List projects
-- `POST /api/v1/projects` - Create a project
-- `GET /api/v1/projects/:id` - Get project with its todo lists
-- `GET /api/v1/stats` - Platform statistics
-- `POST /api/v1/markdown/render` - Render and sanitize arbitrary markdown
-- `GET /api/v1/openapi` - Complete OpenAPI 3.1.0 specification
+### Official Model Context Protocol (MCP) Server
+
+Connect Doer directly to your AI coding agents, IDEs, and assistant workflows (such as Claude Desktop, Cursor, Gemini, and Antigravity) using the official MCP server:
+
+🔗 **[Doer MCP Server (`doer-mcp`)](https://github.com/leouofa/doer-mcp)**
+
+The MCP server provides 19 tools, 5 resources (`doer://`), and built-in/dynamic prompts for AI agents to:
+- Browse, search, read, create, update, and manage todo lists, checklists, and projects
+- Append new task items or sections (`doer_append_to_todo_list`) and toggle checklist items by index, line, or text matching (`doer_toggle_todo_item`)
+- Toggle and reorder pinned lists in the workspace sidebar
+- Inspect, upload, and manage ActiveStorage file attachments
+- Render Markdown via Doer's server-side Redcarpet pipeline
+- Deconstruct objectives into milestone checklists (`doer_breakdown_task`), plan project sprints (`doer_plan_project_sprint`), and hydrate `{{variable}}` checklist templates (`doer_use_list_template`)
+
+### Client Integration Example (Antigravity / Claude Desktop / Cursor)
+
+Add to your MCP configuration (e.g. `~/.gemini/antigravity/mcp_config.json` or `claude_desktop_config.json`):
+
+```json
+{
+  "mcpServers": {
+    "doer": {
+      "command": "node",
+      "args": ["/path/to/doer-mcp/dist/index.js"],
+      "env": {
+        "DOER_API_URL": "http://localhost:3000"
+      }
+    }
+  }
+}
+```
+
+### OpenAPI Specification
+- **Live Endpoint**: `GET http://localhost:3000/api/v1/openapi.json`
+- **Specification File**: [`openapi.json`](openapi.json) located in repository root
+
+### API Endpoints Summary
+
+| Method | Endpoint | Description |
+| :--- | :--- | :--- |
+| `GET` | `/api/v1/stats` | Platform statistics (total lists, standalone lists, pinned lists, projects, attachments) |
+| `GET` | `/api/v1/openapi` | Complete OpenAPI 3.1.0 specification |
+| `POST` | `/api/v1/markdown/render` | Render raw Markdown text to sanitized HTML |
+| `GET` | `/api/v1/projects` | List projects with todo list counts and search (`?q=...`) |
+| `POST` | `/api/v1/projects` | Create a new project |
+| `GET` | `/api/v1/projects/:id` | Get project details and associated todo lists |
+| `PATCH` | `/api/v1/projects/:id` | Update project attributes |
+| `DELETE` | `/api/v1/projects/:id` | Delete a project workspace (preserves todo lists as standalone) |
+| `GET` | `/api/v1/todo_lists` | List todo lists (supports `?scope=standalone`, `?project_id=ID`, `?pinned=true`, `?q=query`) |
+| `POST` | `/api/v1/todo_lists` | Create a new todo list or checklist |
+| `GET` | `/api/v1/todo_lists/:id` | Get todo list details (`?render_markdown=true` for HTML) |
+| `PATCH` | `/api/v1/todo_lists/:id` | Update a todo list |
+| `DELETE` | `/api/v1/todo_lists/:id` | Delete a todo list |
+| `PATCH` | `/api/v1/todo_lists/:id/toggle_pin` | Toggle pinned state of a todo list |
+| `PATCH` | `/api/v1/todo_lists/reorder_pinned` | Reorder pinned lists (`{ todo_list_ids: [...] }`) |
+| `GET` | `/api/v1/todo_lists/:id/attachments` | List attachments with metadata and URLs |
+| `POST` | `/api/v1/todo_lists/:id/attachments` | Upload attachments (`multipart/form-data`) |
+| `DELETE` | `/api/v1/todo_lists/:id/attachments/:attachment_id` | Purge attachment |
+
+---
+
+## License
+
+This project is open-source and available under the MIT License.
