@@ -15,6 +15,7 @@
   <a href="https://tailwindcss.com"><img src="https://img.shields.io/badge/Tailwind_CSS-v4-38B2AC?style=flat-square&logo=tailwind-css&logoColor=white" alt="Tailwind CSS v4"></a>
   <a href="https://www.postgresql.org"><img src="https://img.shields.io/badge/PostgreSQL-16%2B-336791?style=flat-square&logo=postgresql&logoColor=white" alt="PostgreSQL"></a>
   <img src="https://img.shields.io/badge/Architecture-Local--First-22c55e?style=flat-square" alt="Local-First Architecture">
+  <a href="https://github.com/leouofa/doer-tui"><img src="https://img.shields.io/badge/Terminal_UI-doer--tui-06b6d4?style=flat-square&logo=rust&logoColor=white" alt="Doer TUI"></a>
   <a href="https://github.com/leouofa/doer-mcp"><img src="https://img.shields.io/badge/MCP_Server-doer--mcp-6366f1?style=flat-square&logo=github&logoColor=white" alt="Doer MCP Server"></a>
 </p>
 
@@ -23,6 +24,8 @@
 ## Overview
 
 **Doer** is a dedicated, distraction-free desktop todoing and checklist workbench designed to run locally. It allows you to organize, author, preview, and track todo lists grouped by project or kept as standalone scratchpads—with interactive preview checkboxes, instant one-click markdown copying, live split-screen previewing, drag-and-drop context file attachments, and pinned list management.
+
+Interact with Doer through its Hotwire web interface, keyboard-driven terminal client ([`doer-tui`](https://github.com/leouofa/doer-tui)), or connect AI assistants via the Model Context Protocol server ([`doer-mcp`](https://github.com/leouofa/doer-mcp)).
 
 ---
 
@@ -69,7 +72,8 @@
 
 ```mermaid
 graph TD
-    Browser[Client: Hotwire Turbo 8 + Stimulus]
+    Browser[Web Client: Hotwire Turbo 8 + Stimulus]
+    TUI[Terminal UI: doer-tui]
     MCPAgent[AI Agents / MCP Clients]
     MCPServer[doer-mcp Server]
     Tailwind[Tailwind CSS v4 + Redcarpet GFM]
@@ -79,6 +83,7 @@ graph TD
 
     Browser <-->|HTTP / Turbo Streams| Rails
     Browser --- Tailwind
+    TUI <-->|REST API| Rails
     MCPAgent <-->|MCP JSON-RPC| MCPServer
     MCPServer <-->|REST API| Rails
     Rails <--> Postgres
@@ -87,6 +92,7 @@ graph TD
 
 - **Backend**: Ruby 3.4+, Rails 8.1+
 - **Frontend**: Hotwire (Turbo 8 + Stimulus), Tailwind CSS v4, Redcarpet GFM
+- **Terminal UI**: [`doer-tui`](https://github.com/leouofa/doer-tui) fast, keyboard-driven terminal client in Rust (Ratatui + Crossterm)
 - **Database**: PostgreSQL 16+
 - **Attachments**: Active Storage (Local / Disk / S3 compatible)
 - **API**: Comprehensive RESTful JSON API with OpenAPI 3.1 specification at `/api/v1/openapi`
@@ -132,6 +138,29 @@ graph TD
    bin/dev
    ```
    Open [http://localhost:3000](http://localhost:3000) in your browser.
+
+---
+
+## Terminal User Interface (TUI)
+
+Prefer a keyboard-driven workflow in your terminal? Use [`doer-tui`](https://github.com/leouofa/doer-tui), an official terminal client built in Rust with [Ratatui](https://ratatui.rs) and [Crossterm](https://github.com/crossterm-rs/crossterm).
+
+🔗 **[Doer TUI Repository (`doer-tui`)](https://github.com/leouofa/doer-tui)**
+
+### Key TUI Highlights
+- **3-Pane Master–Detail Layout**: Switch panes with `1` / `2` / `3` or `Tab` to manage scopes and projects, browse filtered todo lists with progress badges (`[done/total]`), and inspect rich markdown checklists.
+- **Interactive Checklist Toggling**: Jump between checklist items with `j` / `k` and toggle tasks (`- [ ]` ⇄ `- [x]`) with `Space` or `Enter` with instant server synchronization.
+- **Quick Add & Modals**: Press `a` to quick-add tasks (`- [ ] <task>`), `n`/`e` to create or edit projects and lists, `p` to pin/unpin lists, and `d` to delete with confirmation.
+- **External `$EDITOR`**: Press `E` to suspend the TUI and edit the raw Markdown in your preferred editor (`nvim`, `vi`, `nano`), reloading seamlessly on save.
+- **Attachments & Clipboard**: Press `A` to inspect, upload, download, or delete ActiveStorage attachments; press `y` to yank active task text or `Y` for the entire markdown document to the system clipboard.
+- **Host Switcher & Remote Support**: Seamlessly connect to local or remote Doer instances (via `DOER_REMOTE_URL` or `--url <URL>`), and switch hosts on the fly using `H` or `u`.
+
+```bash
+# Clone and run doer-tui
+git clone https://github.com/leouofa/doer-tui.git
+cd doer-tui
+cargo run
+```
 
 ---
 
