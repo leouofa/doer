@@ -40,7 +40,12 @@ class TodoListsController < ApplicationController
   end
 
   def update
+    auto_save = params[:auto_save].to_s == "1" || params[:auto_save].to_s == "true"
+    @todo_list.skip_versioning = auto_save
+
     if @todo_list.update(todo_list_params)
+      @todo_list.record_version_snapshot! unless auto_save
+
       respond_to do |format|
         format.html { redirect_to @todo_list, notice: "Todo list updated successfully." }
         format.json { render json: { status: :ok, todo_list: @todo_list } }

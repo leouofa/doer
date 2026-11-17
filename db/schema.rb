@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_11_13_224013) do
+ActiveRecord::Schema[8.1].define(version: 2026_11_17_180000) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -49,6 +49,17 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_13_224013) do
     t.datetime "updated_at", null: false
   end
 
+  create_table "todo_list_versions", force: :cascade do |t|
+    t.bigint "todo_list_id", null: false
+    t.integer "version_number", null: false
+    t.string "title", null: false
+    t.text "body", default: "", null: false
+    t.datetime "created_at", null: false
+    t.index ["todo_list_id", "created_at"], name: "index_todo_list_versions_on_todo_list_id_and_created_at"
+    t.index ["todo_list_id", "version_number"], name: "index_todo_list_versions_on_todo_list_id_and_version_number", unique: true
+    t.index ["todo_list_id"], name: "index_todo_list_versions_on_todo_list_id"
+  end
+
   create_table "todo_lists", force: :cascade do |t|
     t.bigint "project_id"
     t.string "title", null: false
@@ -64,5 +75,6 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_13_224013) do
 
   add_foreign_key "active_storage_attachments", "active_storage_blobs", column: "blob_id"
   add_foreign_key "active_storage_variant_records", "active_storage_blobs", column: "blob_id"
+  add_foreign_key "todo_list_versions", "todo_lists", on_delete: :cascade
   add_foreign_key "todo_lists", "projects", on_delete: :nullify
 end
